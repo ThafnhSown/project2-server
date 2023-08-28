@@ -1,80 +1,62 @@
 'use strict'
 
-const compiler = require("compilex");
 const submission = require("../models/submission.model");
-const { compileCodeRepo } = require("../models/repositories/code.repo");
-const option = { stats: true } 
-compiler.init(option) 
+const { compileCPPAsync, compileCPPWithInputAsync, compilePythonWithInputAsync  } = require("../models/repositories/code.repo");
+const problem = require("../models/problem.model")
+const testCase = require("../models/testCase.model")
+
 class SubmissionService {
-    static async createSubmit( code, input ) {
+    static async createSubmit(problemId) {
+      // const { userId, problemId, code } = body
 
-        var flatData = { output: ''}
-        if (!input) {
-            var envData = { OS: "windows" };
-            compiler.compilePython(envData, code, function(data){
-                flatData.output = data.output
-                console.log(flatData)
-            })
+      const testcases = await testCase.aggregate([
+        {
+          $lookup: {
+            from: "problem",
+            localField: "problemId",
+            foreignField: "_id",
+            as: "test"
+          }
+        },
+        {
+          $match: { problemId: problemId}
         }
-        else {
-            var envData = { OS: "windows" };
-            compiler.compilePythonWithInput(envData, code, input, function(data){
-                flatData.output = data.output
-                console.log(flatData, input)
-            })
-        }
-        // if (!input) {
-        //     var envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } }; // (uses g++ command to compile )
-        //     compiler.compileCPP(envData, code, function (data) {
-        //         if (data.output) {
-        //           return data
-        //         }
-        //         else {
-        //             return new BadRequestError("Error")
-        //         }
-        //     });
-        // }
-        // else {
-        //     var envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } }; // (uses g++ command to compile )
-        //     compiler.compileCPPWithInput(envData, code, input, function (data) {
-        //         if (data.output) {
-        //             return data
-        //         }
-        //         else {
-        //             return new BadRequestError("Error")
-        //         }
-        //     });
-        //   }
-        const newSubmission = await submission.create({
-            userId: "11",
-            problemId: "1",
-            code,
-            input, 
-            output: flatData.output
-        })
-        return newSubmission
-    }
+      ])
 
-    static async compileCode(body) {
-        const { code, input } = body;
-        var flatData = 's'
-        if (!input) {
-            var envData = { OS: "windows" };
-            compiler.compilePython(envData, code, function(data){
-                return data.output;
-                flatData.output = data.output
-                console.log(flatData)
-            })
-        }
-        else {
-            var envData = { OS: "windows" };
-            compiler.compilePythonWithInput(envData, code, input, function(data){
-                flatData = data.output
-                console.log(flatData, input)
-                return flatData
-            })
-        }
+        // var envData = { OS: "windows" };
+        // const data = await compilePythonWithInputAsync(envData, code, input);
+        // flatData.output = data.output;
+        // console.log(flatData, input);
+        
+        // const newSubmission = await submission.create({
+        //     userId,
+        //     problemId,
+        //     code,
+        //     input, 
+        //     output: flatData.output
+        // })
+        // return newSubmission
+        return testcases
     }
+  
+  static async compileCode(body) {
+    const { code, input } = body;
+    console.log(code, input);
+    let flatData = {output: ''};
+  
+    if (!input) {
+      var envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
+      const data = await compileCPPAsync(envData, code);
+      flatData.output = data.output;
+    } else {
+      var envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
+      const data = await compileCPPWithInputAsync(envData, code, input);
+      flatData.output = data.output;
+      console.log(flatData, input);
+    }
+  
+    return flatData;
+  }
 }
 
 module.exports = SubmissionService

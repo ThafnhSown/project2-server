@@ -15,7 +15,6 @@ const problemSchema = new Schema({
     },
     acceptance: {
         type: Number, 
-        required: true
     },
     description: {
         type: String, 

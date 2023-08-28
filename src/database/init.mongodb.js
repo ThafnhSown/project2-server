@@ -35,6 +35,5 @@ class Database {
 }
 
 const instanceMongodb = Database.getInstance();
-instanceMongodb.book = require('../models/book.model')(mongoose, mongoosePaginate)
 
 module.exports = instanceMongodb;
